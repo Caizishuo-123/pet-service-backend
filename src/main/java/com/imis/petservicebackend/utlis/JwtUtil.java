@@ -10,7 +10,7 @@ import java.util.Date;
 public class JwtUtil {
 
     // 密钥（必须 >= 256 bits = 32字节）
-    private static final String SECRET = "12345678901234567890123456789012"; // 32位
+    private static final String SECRET = "12345678901234567890123456789987"; // 32位
     private static final long EXPIRATION = 1000 * 60 * 60 * 24 * 3; // 3天
 
     private static final SecretKeySpec KEY = new SecretKeySpec(SECRET.getBytes(), "HmacSHA256");

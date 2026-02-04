@@ -17,15 +17,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     // 白名单前缀
     private static final List<String> WHITE_LIST_PREFIX = Arrays.asList(
-            "/admin/auth/login",
-            "/admin/auth/register",
-            "/admin/auth/logout"
-    );
+            "/user/login",
+            "/user/register",
+            "/user/logout");
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+            HttpServletResponse response,
+            FilterChain filterChain)
             throws ServletException, IOException {
 
         String uri = request.getRequestURI();
@@ -38,8 +37,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 只拦 /admin/**
-        if (!uri.startsWith("/admin")) {
+        // 拦截所有非白名单请求
+        if (!uri.startsWith("")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -62,6 +61,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         // 校验通过
+        // 将用户信息存入 request，方便后续 Controller 直接获取
+        String account = JwtUtil.getUserAccount(token);
+        request.setAttribute("account", account);
+
         filterChain.doFilter(request, response);
     }
 }

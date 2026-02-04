@@ -3,11 +3,9 @@ package com.imis.petservicebackend.entity;
 import lombok.Data;
 
 @Data
-public class LoginVO {
-    private String token;
-    private Long userId;
+public class UserInfo {
     private String username;
     private String phone;
-    private Integer role;
-
+    private String avatar;
+    private String address;
 }
