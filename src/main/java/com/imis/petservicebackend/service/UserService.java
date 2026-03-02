@@ -17,7 +17,23 @@ public interface UserService extends IService<User> {
 
     UserInfo getCurrentUserInfo(String account);
 
-    boolean verifyPhone(String userName, String phone);
+    /**
+     * 忘记密码 —— 通过邮箱重置
+     */
+    boolean resetPassword(String email, String newPassword, String confirmPassword);
 
-    boolean updatePassword(String userName, String password, String repeatPassword);
+    /**
+     * 修改密码 —— 登录状态下，通过邮箱验证码
+     */
+    boolean updatePasswordByEmail(String username, String email, String newPassword, String confirmPassword);
+
+    /**
+     * 修改个人信息（地址）
+     */
+    boolean updateUserInfo(String username, String address);
+
+    /**
+     * 更新头像
+     */
+    boolean updateAvatar(String username, String avatarUrl);
 }

@@ -30,7 +30,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         LambdaQueryWrapper<User> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(User::getUsername, account)
                 .or()
-                .eq(User::getPhone, account);
+                .eq(User::getPhone, account)
+                .or()
+                .eq(User::getEmail, account);
         User user = userMapper.selectOne(lambdaQueryWrapper);
         if (user == null) {
             throw new BusinessException("用户不存在");
@@ -50,9 +52,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException("用户名已存在");
         }
         LambdaQueryWrapper<User> lambdaQueryWrapper2 = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper2.eq(User::getPhone, user.getPhone());
+        lambdaQueryWrapper2.eq(User::getEmail, user.getEmail());
         if (userMapper.selectCount(lambdaQueryWrapper2) > 0) {
-            throw new BusinessException("手机号已存在");
+            throw new BusinessException("邮箱已存在");
         }
         user.setPassword(MD5Util.encrypt(user.getPassword()));
         // 随机分配头像
@@ -69,6 +71,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (user != null) {
             userInfo.setUsername(user.getUsername());
             userInfo.setPhone(CommonUtil.maskPhone(user.getPhone()));
+            userInfo.setEmail(user.getEmail());
             userInfo.setAvatar(user.getAvatar());
             userInfo.setAddress(user.getAddress());
         }
@@ -76,28 +79,63 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public boolean verifyPhone(String userName, String phone) {
+    public boolean resetPassword(String email, String newPassword, String confirmPassword) {
+        if (!newPassword.equals(confirmPassword)) {
+            throw new BusinessException("两次密码不一致");
+        }
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getUsername, userName)
-                .eq(User::getPhone, phone);
-        return userMapper.selectCount(wrapper) > 0;
+        wrapper.eq(User::getEmail, email);
+        User user = userMapper.selectOne(wrapper);
+        if (user == null) {
+            throw new BusinessException("该邮箱未注册");
+        }
+        user.setPassword(MD5Util.encrypt(newPassword));
+        return userMapper.updateById(user) > 0;
     }
 
     @Override
-    public boolean updatePassword(String userName, String password, String repeatPassword) {
+    public boolean updatePasswordByEmail(String username, String email, String newPassword, String confirmPassword) {
+        if (!newPassword.equals(confirmPassword)) {
+            throw new BusinessException("两次密码不一致");
+        }
+        // 验证邮箱是否属于当前用户
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getUsername, userName);
+        wrapper.eq(User::getUsername, username);
         User user = userMapper.selectOne(wrapper);
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
-        if (!password.equals(repeatPassword)) {
-            throw new BusinessException("两次密码不一致");
+        if (!email.equals(user.getEmail())) {
+            throw new BusinessException("邮箱与当前账号不匹配");
         }
-        user.setPassword(MD5Util.encrypt(password));
+        user.setPassword(MD5Util.encrypt(newPassword));
         return userMapper.updateById(user) > 0;
     }
 
+    @Override
+    public boolean updateUserInfo(String username, String address) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getUsername, username);
+        User user = userMapper.selectOne(wrapper);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        if (address != null) {
+            user.setAddress(address);
+        }
+        return userMapper.updateById(user) > 0;
+    }
 
+    @Override
+    public boolean updateAvatar(String username, String avatarUrl) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getUsername, username);
+        User user = userMapper.selectOne(wrapper);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        user.setAvatar(avatarUrl);
+        return userMapper.updateById(user) > 0;
+    }
 
 }

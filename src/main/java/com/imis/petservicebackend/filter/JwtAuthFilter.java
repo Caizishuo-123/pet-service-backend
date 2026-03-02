@@ -19,7 +19,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static final List<String> WHITE_LIST_PREFIX = Arrays.asList(
             "/user/login",
             "/user/register",
-            "/user/logout");
+            "/user/logout",
+            "/email/send-code",
+            "/email/register",
+            "/email/reset-password",
+            "/pet/adoption",
+            "/pet/detail",
+            "/petService/",
+            "/post/page",
+            "/post/detail",
+            "/comment/page");
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,

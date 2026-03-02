@@ -7,10 +7,26 @@ spring:
     username: root
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    timeout: 5000
+  mail:
+    host: smtp.qq.com               # 或 smtp.163.com、smtp.gmail.com
+    port: 587
+    username: ${EMAIL_NUMBER}      # 你的邮箱
+    password: ${EMAIL_CODE}         # 邮箱的授权码（不是登录密码）
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 mybatis-plus:
   mapper-locations: classpath:/mapper/*.xml # 可选，如果纯注解可以省略
-  type-aliases-package: com.imis.petmanagebackend.entity
+  type-aliases-package: com.imis.petservicebackend.entity
   global-config:
     db-config:
       id-type: auto
