@@ -8,6 +8,7 @@
             <id property="id" column="id" />
             <result property="userId" column="user_id" />
             <result property="type" column="type" />
+            <result property="category" column="category" />
             <result property="title" column="title" />
             <result property="content" column="content" />
             <result property="imageUrl" column="image_url" />
@@ -18,7 +19,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,user_id,type,title,content,image_url,
+        id,user_id,type,category,title,content,image_url,
         like_count,status,create_time,update_time
     </sql>
 </mapper>

@@ -26,7 +26,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     private UserMapper userMapper;
 
     @Override
-    public String login(String account, String password) {
+    public java.util.Map<String, Object> login(String account, String password) {
         LambdaQueryWrapper<User> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(User::getUsername, account)
                 .or()
@@ -41,7 +41,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (!MD5Util.matches(password, user.getPassword())) {
             throw new BusinessException("账号或密码错误");
         }
-        return JwtUtil.generateToken(user.getUsername());
+        String token = JwtUtil.generateToken(user.getUsername());
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("token", token);
+        result.put("userId", user.getId());
+        result.put("username", user.getUsername());
+        result.put("phone", user.getPhone());
+        result.put("email", user.getEmail());
+        result.put("avatar", user.getAvatar());
+        result.put("role", user.getRole());
+        return result;
     }
 
     @Override

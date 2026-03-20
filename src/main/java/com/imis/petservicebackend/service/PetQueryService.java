@@ -12,8 +12,13 @@ public interface PetQueryService extends IService<Pet> {
   /**
    * 分页查询可领养宠物列表（status=2）
    */
-  Page<Pet> getAdoptionPage(Integer type, String breed, Integer gender,
-      Integer page, Integer pageSize);
+  Page<Pet> getAdoptionPage(Integer type, String breed, Integer gender, Integer ageMin,
+      Integer ageMax, String keyword, Integer page, Integer pageSize);
+
+  /**
+   * 获取宠物品种列表（去重）
+   */
+  java.util.List<String> listAdoptionBreeds(Integer type);
 
   /**
    * 查询我的宠物列表

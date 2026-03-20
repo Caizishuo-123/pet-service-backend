@@ -41,10 +41,51 @@ public class PostController {
    */
   @GetMapping("/page")
   public Result<?> getPostPage(
+      @RequestParam(required = false) Integer category,
+      @RequestParam(required = false) Integer type,
+      @RequestParam(required = false) String keyword,
+      @RequestParam(defaultValue = "1") Integer page,
+      @RequestParam(defaultValue = "10") Integer pageSize) {
+    Integer effectiveCategory = category != null ? category : type;
+    Page<Map<String, Object>> pageInfo = communityPostService.getPostPage(effectiveCategory, keyword, page, pageSize);
+    return Result.success(pageInfo);
+  }
+
+  /**
+   * 热榜帖子（游客可访问）
+   */
+  @GetMapping("/hot")
+  public Result<?> getHotPostPage(
+      @RequestParam(defaultValue = "1") Integer page,
+      @RequestParam(defaultValue = "5") Integer pageSize) {
+    Page<Map<String, Object>> pageInfo = communityPostService.getHotPostPage(page, pageSize);
+    return Result.success(pageInfo);
+  }
+
+  /**
+   * 公告专区（游客可访问）
+   */
+  @GetMapping("/notice")
+  public Result<?> getNoticePage(
+      @RequestParam(defaultValue = "1") Integer page,
+      @RequestParam(defaultValue = "5") Integer pageSize) {
+    Page<Map<String, Object>> pageInfo = communityPostService.getNoticePage(page, pageSize);
+    return Result.success(pageInfo);
+  }
+
+  /**
+   * 我的帖子列表（需登录）
+   */
+  @GetMapping("/my/page")
+  public Result<?> getMyPostPage(
+      @RequestAttribute("account") String account,
+      @RequestParam(required = false) Integer category,
       @RequestParam(required = false) Integer type,
       @RequestParam(defaultValue = "1") Integer page,
       @RequestParam(defaultValue = "10") Integer pageSize) {
-    Page<Map<String, Object>> pageInfo = communityPostService.getPostPage(type, page, pageSize);
+    Long userId = getUserId(account);
+    Integer effectiveCategory = category != null ? category : type;
+    Page<Map<String, Object>> pageInfo = communityPostService.getMyPostPage(userId, effectiveCategory, page, pageSize);
     return Result.success(pageInfo);
   }
 

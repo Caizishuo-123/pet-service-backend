@@ -62,36 +62,51 @@ public class EmailController {
    * @param email    邮箱
    * @param code     验证码
    * @param username 用户名
+   * @param phone    手机号
    * @param password 密码
    */
   @PostMapping("/register")
   public Result<?> registerByEmail(@RequestParam("email") String email,
       @RequestParam("code") String code,
       @RequestParam("username") String username,
+      @RequestParam("phone") String phone,
       @RequestParam("password") String password) {
     // 1. 校验验证码
     if (!emailCodeRedisService.verifyCode(email, code)) {
       throw new BusinessException("验证码错误或已过期");
     }
 
-    // 2. 检查邮箱是否已注册
+    // 2. 校验手机号格式
+    if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
+      throw new BusinessException("手机号格式不正确");
+    }
+
+    // 3. 检查邮箱是否已注册
     LambdaQueryWrapper<User> emailWrapper = new LambdaQueryWrapper<>();
     emailWrapper.eq(User::getEmail, email);
     if (userService.count(emailWrapper) > 0) {
       throw new BusinessException("该邮箱已被注册");
     }
 
-    // 3. 检查用户名是否已注册
+    // 4. 检查用户名是否已注册
     LambdaQueryWrapper<User> usernameWrapper = new LambdaQueryWrapper<>();
     usernameWrapper.eq(User::getUsername, username);
     if (userService.count(usernameWrapper) > 0) {
       throw new BusinessException("用户名已存在");
     }
 
-    // 4. 创建用户
+    // 5. 检查手机号是否已注册
+    LambdaQueryWrapper<User> phoneWrapper = new LambdaQueryWrapper<>();
+    phoneWrapper.eq(User::getPhone, phone);
+    if (userService.count(phoneWrapper) > 0) {
+      throw new BusinessException("该手机号已被注册");
+    }
+
+    // 6. 创建用户
     User user = new User();
     user.setEmail(email);
     user.setUsername(username);
+    user.setPhone(phone);
     user.setPassword(MD5Util.encrypt(password));
     user.setAvatar(CommonUtil.getRandomAvatar());
 
@@ -100,7 +115,7 @@ public class EmailController {
       throw new BusinessException("注册失败，请稍后重试");
     }
 
-    // 5. 注册成功后删除验证码
+    // 7. 注册成功后删除验证码
     emailCodeRedisService.deleteCode(email);
 
     return Result.success("注册成功");

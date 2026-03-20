@@ -24,9 +24,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             "/email/register",
             "/email/reset-password",
             "/pet/adoption",
+            "/pet/breeds",
             "/pet/detail",
             "/petService/",
             "/post/page",
+            "/post/hot",
+            "/post/notice",
             "/post/detail",
             "/comment/page");
 

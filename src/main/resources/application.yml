@@ -41,3 +41,6 @@ tencent:
     region: ap-guangzhou                      # 替换为你的 Bucket 地域
     bucketName: cthulhu-1400035022            # 替换为你的 Bucket 名称
     baseUrl: https://cthulhu-1400035022.cos.ap-guangzhou.myqcloud.com # 访问域名前缀
+
+appointment:
+  max-per-hour: 5

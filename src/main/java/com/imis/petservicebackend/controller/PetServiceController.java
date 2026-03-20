@@ -24,9 +24,14 @@ public class PetServiceController {
   @GetMapping("/page")
   public Result<?> getServicePage(
       @RequestParam(required = false) Integer type,
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) java.math.BigDecimal minPrice,
+      @RequestParam(required = false) java.math.BigDecimal maxPrice,
+      @RequestParam(required = false) String sort,
       @RequestParam(defaultValue = "1") Integer page,
       @RequestParam(defaultValue = "10") Integer pageSize) {
-    Page<PetServiceEntity> pageInfo = petServiceQueryService.getServicePage(type, page, pageSize);
+    Page<PetServiceEntity> pageInfo = petServiceQueryService.getServicePage(type, keyword, minPrice,
+        maxPrice, sort, page, pageSize);
     return Result.success(pageInfo);
   }
 

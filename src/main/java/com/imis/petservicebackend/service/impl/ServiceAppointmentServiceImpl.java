@@ -13,15 +13,21 @@ import com.imis.petservicebackend.service.PetQueryService;
 import com.imis.petservicebackend.service.PetServiceQueryService;
 import com.imis.petservicebackend.service.ServiceAppointmentService;
 import com.imis.petservicebackend.service.UserService;
+import com.imis.petservicebackend.service.OrdersService;
 import com.imis.petservicebackend.mapper.ServiceAppointmentMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
+import java.util.Calendar;
 import java.util.stream.Collectors;
+import com.imis.petservicebackend.entity.Orders;
 
 /**
  * @author 64360
@@ -33,8 +39,15 @@ import java.util.stream.Collectors;
 public class ServiceAppointmentServiceImpl extends ServiceImpl<ServiceAppointmentMapper, ServiceAppointment>
         implements ServiceAppointmentService {
 
+    private static final int DEFAULT_DURATION_MINUTES = 60;
+    private static final int MAX_CONFLICT_WINDOW_MINUTES = 24 * 60;
+
     @Autowired
     private UserService userService;
+
+    @Lazy
+    @Autowired
+    private OrdersService ordersService;
 
     @Autowired
     private PetQueryService petQueryService;
@@ -42,8 +55,18 @@ public class ServiceAppointmentServiceImpl extends ServiceImpl<ServiceAppointmen
     @Autowired
     private PetServiceQueryService petServiceQueryService;
 
+    @Value("${appointment.max-per-hour:5}")
+    private int maxPerHour;
+
     @Override
     public boolean createAppointment(Long userId, ServiceAppointment appointment) {
+        if (appointment == null || appointment.getAppointmentTime() == null) {
+            throw new BusinessException("预约时间不能为空");
+        }
+        Date now = new Date();
+        if (appointment.getAppointmentTime().before(now)) {
+            throw new BusinessException("预约时间不能早于当前时间");
+        }
         // 校验宠物是否属于当前用户
         Pet pet = petQueryService.getById(appointment.getPetId());
         if (pet == null) {
@@ -57,9 +80,27 @@ public class ServiceAppointmentServiceImpl extends ServiceImpl<ServiceAppointmen
         if (service == null || service.getStatus() != 1) {
             throw new BusinessException("服务不存在或已禁用");
         }
+        int durationMinutes = resolveDurationMinutes(service);
+        Date startTime = appointment.getAppointmentTime();
+        Date endTime = addMinutes(startTime, durationMinutes);
+
+        validatePetTimeConflict(appointment.getPetId(), startTime, endTime);
+        validateServiceCapacity(appointment.getServiceId(), startTime);
+
         appointment.setUserId(userId);
         appointment.setStatus(1); // 已预约
-        return this.save(appointment);
+        boolean saved = this.save(appointment);
+        if (saved) {
+            Orders order = new Orders();
+            order.setOrderNo(ordersService.generateOrderNo());
+            order.setUserId(userId);
+            order.setAppointmentId(appointment.getId());
+            order.setTotalPrice(service.getPrice());
+            order.setPayStatus(0); // 待支付
+            order.setCreateTime(new Date());
+            ordersService.save(order);
+        }
+        return saved;
     }
 
     @Override
@@ -166,5 +207,72 @@ public class ServiceAppointmentServiceImpl extends ServiceImpl<ServiceAppointmen
         updateWrapper.eq(ServiceAppointment::getId, id)
                 .set(ServiceAppointment::getStatus, 3); // 3-已取消
         return this.update(updateWrapper);
+    }
+
+    private int resolveDurationMinutes(PetServiceEntity service) {
+        if (service == null || service.getDuration() == null || service.getDuration() <= 0) {
+            return DEFAULT_DURATION_MINUTES;
+        }
+        return service.getDuration();
+    }
+
+    private void validatePetTimeConflict(Long petId, Date startTime, Date endTime) {
+        Date windowStart = addMinutes(startTime, -MAX_CONFLICT_WINDOW_MINUTES);
+        Date windowEnd = addMinutes(endTime, MAX_CONFLICT_WINDOW_MINUTES);
+        List<ServiceAppointment> existing = this.list(new LambdaQueryWrapper<ServiceAppointment>()
+                .eq(ServiceAppointment::getPetId, petId)
+                .ne(ServiceAppointment::getStatus, 3)
+                .ge(ServiceAppointment::getAppointmentTime, windowStart)
+                .le(ServiceAppointment::getAppointmentTime, windowEnd));
+        if (existing == null || existing.isEmpty()) {
+            return;
+        }
+        Map<Long, Integer> durationCache = new HashMap<>();
+        for (ServiceAppointment item : existing) {
+            if (item.getAppointmentTime() == null) continue;
+            int duration = durationCache.computeIfAbsent(item.getServiceId(), serviceId -> {
+                PetServiceEntity service = petServiceQueryService.getById(serviceId);
+                return resolveDurationMinutes(service);
+            });
+            Date existedStart = item.getAppointmentTime();
+            Date existedEnd = addMinutes(existedStart, duration);
+            if (isOverlap(startTime, endTime, existedStart, existedEnd)) {
+                throw new BusinessException("该宠物在该时间段已有预约，请选择其他时间");
+            }
+        }
+    }
+
+    private void validateServiceCapacity(Long serviceId, Date appointmentTime) {
+        if (maxPerHour <= 0) return;
+        Date hourStart = truncateToHour(appointmentTime);
+        Date hourEnd = addMinutes(hourStart, 60);
+        long count = this.count(new LambdaQueryWrapper<ServiceAppointment>()
+                .eq(ServiceAppointment::getServiceId, serviceId)
+                .ne(ServiceAppointment::getStatus, 3)
+                .ge(ServiceAppointment::getAppointmentTime, hourStart)
+                .lt(ServiceAppointment::getAppointmentTime, hourEnd));
+        if (count >= maxPerHour) {
+            throw new BusinessException("该服务时段预约已满，请选择其他时间");
+        }
+    }
+
+    private Date addMinutes(Date time, int minutes) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(time);
+        calendar.add(Calendar.MINUTE, minutes);
+        return calendar.getTime();
+    }
+
+    private Date truncateToHour(Date time) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(time);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
+
+    private boolean isOverlap(Date startA, Date endA, Date startB, Date endB) {
+        return startA.before(endB) && endA.after(startB);
     }
 }

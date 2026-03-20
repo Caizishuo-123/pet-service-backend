@@ -14,7 +14,8 @@ public interface PetServiceQueryService extends IService<PetServiceEntity> {
   /**
    * 分页查询启用的服务列表
    */
-  Page<PetServiceEntity> getServicePage(Integer type, Integer page, Integer pageSize);
+  Page<PetServiceEntity> getServicePage(Integer type, String keyword, java.math.BigDecimal minPrice,
+      java.math.BigDecimal maxPrice, String sort, Integer page, Integer pageSize);
 
   /**
    * 获取所有启用的服务（不分页，供下拉选择）

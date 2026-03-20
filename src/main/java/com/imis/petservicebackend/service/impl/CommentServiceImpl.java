@@ -66,6 +66,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment>
             User user = userService.getById(comment.getUserId());
             map.put("username", user != null ? user.getUsername() : "未知用户");
             map.put("userAvatar", user != null ? user.getAvatar() : null);
+            map.put("avatar", user != null ? user.getAvatar() : null);
 
             return map;
         }).collect(Collectors.toList());

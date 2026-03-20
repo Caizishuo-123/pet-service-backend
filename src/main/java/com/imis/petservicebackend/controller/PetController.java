@@ -30,11 +30,23 @@ public class PetController {
   public Result<?> getAdoptionPage(
       @RequestParam(required = false) Integer type,
       @RequestParam(required = false) String breed,
+      @RequestParam(required = false) String keyword,
       @RequestParam(required = false) Integer gender,
+      @RequestParam(required = false) Integer ageMin,
+      @RequestParam(required = false) Integer ageMax,
       @RequestParam(defaultValue = "1") Integer page,
       @RequestParam(defaultValue = "10") Integer pageSize) {
-    Page<Pet> pageInfo = petQueryService.getAdoptionPage(type, breed, gender, page, pageSize);
+    Page<Pet> pageInfo = petQueryService.getAdoptionPage(type, breed, gender, ageMin, ageMax,
+        keyword, page, pageSize);
     return Result.success(pageInfo);
+  }
+
+  /**
+   * 获取宠物品种列表（游客可访问）
+   */
+  @GetMapping("/breeds")
+  public Result<?> getAdoptionBreeds(@RequestParam(required = false) Integer type) {
+    return Result.success(petQueryService.listAdoptionBreeds(type));
   }
 
   /**
