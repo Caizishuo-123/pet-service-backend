@@ -1,6 +1,8 @@
 package com.imis.petservicebackend.filter;
 
+import com.imis.petservicebackend.common.Result;
 import com.imis.petservicebackend.utlis.JwtUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -14,6 +16,8 @@ import java.util.List;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     // 白名单前缀
     private static final List<String> WHITE_LIST_PREFIX = Arrays.asList(
@@ -40,7 +44,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String uri = request.getRequestURI();
-        System.out.println("请求 URI = " + uri);
+
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // 白名单放行
         boolean isWhite = WHITE_LIST_PREFIX.stream().anyMatch(uri::startsWith);
@@ -49,26 +57,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 拦截所有非白名单请求
-        if (!uri.startsWith("")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         // 获取 token
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.setContentType("application/json;charset=utf-8");
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"code\":401,\"msg\":\"未授权，缺少Token\"}");
+            writeUnauthorized(response, "未授权，缺少Token");
             return;
         }
 
         String token = authHeader.substring(7);
         if (!JwtUtil.validateToken(token)) {
-            response.setContentType("application/json;charset=utf-8");
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"code\":401,\"msg\":\"Token无效或已过期\"}");
+            writeUnauthorized(response, "Token无效或已过期");
             return;
         }
 
@@ -78,5 +76,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         request.setAttribute("account", account);
 
         filterChain.doFilter(request, response);
+    }
+
+    private void writeUnauthorized(HttpServletResponse response, String message) throws IOException {
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json;charset=utf-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.getWriter().write(OBJECT_MAPPER.writeValueAsString(Result.fail(401, message)));
     }
 }

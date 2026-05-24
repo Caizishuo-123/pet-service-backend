@@ -1,6 +1,7 @@
 package com.imis.petservicebackend.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import java.math.BigDecimal;
 import java.util.Date;
 import lombok.Data;
 
@@ -27,6 +28,8 @@ public class Pet {
   private Integer healthStatus;
 
   private String description;
+
+  private BigDecimal adoptionFee;
 
   private Integer source;
 

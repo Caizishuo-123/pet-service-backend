@@ -18,7 +18,9 @@ public class Orders {
 
     private Long userId;
 
-    private Long appointmentId;
+    private Integer orderType;
+
+    private Long relatedId;
 
     private BigDecimal totalPrice;
 

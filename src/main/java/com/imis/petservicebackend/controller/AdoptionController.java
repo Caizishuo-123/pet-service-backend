@@ -63,6 +63,13 @@ public class AdoptionController {
     return Result.success(detail);
   }
 
+  @PutMapping("/cancel/{id}")
+  public Result<?> cancelApply(@RequestAttribute("account") String account, @PathVariable Long id) {
+    Long userId = getUserId(account);
+    boolean flag = adoptionApplyService.cancelApply(userId, id);
+    return flag ? Result.success("å–æ¶ˆç”³è¯·æˆåŠŸ") : Result.fail("å–æ¶ˆç”³è¯·å¤±è´¥");
+  }
+
   /**
    * 根据用户名获取用户ID
    */

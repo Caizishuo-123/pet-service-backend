@@ -28,4 +28,6 @@ public interface AdoptionApplyService extends IService<AdoptionApply> {
    * 申请详情（带关联信息）
    */
   Map<String, Object> getApplyDetail(Long id);
+
+  boolean cancelApply(Long userId, Long id);
 }

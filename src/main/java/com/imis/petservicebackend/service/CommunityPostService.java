@@ -16,12 +16,12 @@ public interface CommunityPostService extends IService<CommunityPost> {
   /**
    * 发帖（用户端 type=1 普通帖）
    */
-  boolean createPost(Long userId, CommunityPost post);
+  CommunityPost createPost(Long userId, CommunityPost post);
 
   /**
    * 帖子列表（分页，带发帖人信息）
    */
-  Page<Map<String, Object>> getPostPage(Integer category, String keyword, Integer page, Integer pageSize);
+  Page<Map<String, Object>> getPostPage(Integer type, Integer category, String keyword, Integer page, Integer pageSize);
 
   /**
    * 热榜帖子列表（按点赞/评论排序）
@@ -42,6 +42,11 @@ public interface CommunityPostService extends IService<CommunityPost> {
    * 帖子详情（带发帖人头像/用户名）
    */
   Map<String, Object> getPostDetail(Long id);
+
+  /**
+   * ä¿®æ”¹æˆ‘çš„å¸–å­
+   */
+  boolean updateMyPost(Long userId, CommunityPost post);
 
   /**
    * 删除我的帖子（只能删自己的）

@@ -32,8 +32,8 @@ public class PostController {
   public Result<?> createPost(@RequestAttribute("account") String account,
       @RequestBody CommunityPost post) {
     Long userId = getUserId(account);
-    boolean flag = communityPostService.createPost(userId, post);
-    return flag ? Result.success("发帖成功") : Result.fail("发帖失败");
+    CommunityPost savedPost = communityPostService.createPost(userId, post);
+    return Result.success(savedPost);
   }
 
   /**
@@ -46,8 +46,7 @@ public class PostController {
       @RequestParam(required = false) String keyword,
       @RequestParam(defaultValue = "1") Integer page,
       @RequestParam(defaultValue = "10") Integer pageSize) {
-    Integer effectiveCategory = category != null ? category : type;
-    Page<Map<String, Object>> pageInfo = communityPostService.getPostPage(effectiveCategory, keyword, page, pageSize);
+    Page<Map<String, Object>> pageInfo = communityPostService.getPostPage(type, category, keyword, page, pageSize);
     return Result.success(pageInfo);
   }
 
@@ -99,6 +98,17 @@ public class PostController {
       return Result.fail("帖子不存在或已被屏蔽");
     }
     return Result.success(detail);
+  }
+
+  /**
+   * ä¿®æ”¹æˆ‘çš„å¸–å­ï¼ˆéœ€ç™»å½•ï¼Œåªèƒ½ä¿®æ”¹è‡ªå·±çš„æ™®é€šå¸–ï¼‰
+   */
+  @PutMapping("/update")
+  public Result<?> updatePost(@RequestAttribute("account") String account,
+      @RequestBody CommunityPost post) {
+    Long userId = getUserId(account);
+    boolean flag = communityPostService.updateMyPost(userId, post);
+    return flag ? Result.success("修改成功") : Result.fail("修改失败");
   }
 
   /**

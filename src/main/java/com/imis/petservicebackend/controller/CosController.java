@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * COS 对象存储上传接口
@@ -21,6 +24,8 @@ import java.io.IOException;
 @RequiredArgsConstructor
 @Slf4j
 public class CosController {
+
+    private static final Set<String> ALLOWED_TYPES = new HashSet<>(Arrays.asList("head", "pet", "service", "post"));
 
     private final CosService cosService;
 
@@ -39,8 +44,12 @@ public class CosController {
         if (file.isEmpty()) {
             return Result.fail("上传文件不能为空");
         }
+        if (type == null || !ALLOWED_TYPES.contains(type)) {
+            return Result.fail("上传类型无效");
+        }
 
         try {
+            cosService.validateImageFile(file);
             String dir;
             switch (type) {
                 case "head":
@@ -56,7 +65,7 @@ public class CosController {
                     dir = "upload/community";
                     break;
                 default:
-                    dir = "upload/other";
+                    throw new IllegalStateException("Unexpected value: " + type);
             }
 
             String relativePath = cosService.upload(file, dir);

@@ -69,6 +69,7 @@ public class UserController {
             throw new BusinessException("上传文件不能为空");
         }
         try {
+            cosService.validateImageFile(file);
             // 上传到 COS 的 upload/head 目录
             String avatarUrl = cosService.upload(file, "upload/head");
             // 更新数据库头像字段

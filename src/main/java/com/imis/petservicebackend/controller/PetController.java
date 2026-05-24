@@ -8,6 +8,7 @@ import com.imis.petservicebackend.entity.Pet;
 import com.imis.petservicebackend.entity.User;
 import com.imis.petservicebackend.service.PetQueryService;
 import com.imis.petservicebackend.service.UserService;
+import java.math.BigDecimal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -34,9 +35,11 @@ public class PetController {
       @RequestParam(required = false) Integer gender,
       @RequestParam(required = false) Integer ageMin,
       @RequestParam(required = false) Integer ageMax,
+      @RequestParam(required = false) BigDecimal priceMin,
+      @RequestParam(required = false) BigDecimal priceMax,
       @RequestParam(defaultValue = "1") Integer page,
       @RequestParam(defaultValue = "10") Integer pageSize) {
-    Page<Pet> pageInfo = petQueryService.getAdoptionPage(type, breed, gender, ageMin, ageMax,
+    Page<Pet> pageInfo = petQueryService.getAdoptionPage(type, breed, gender, ageMin, ageMax, priceMin, priceMax,
         keyword, page, pageSize);
     return Result.success(pageInfo);
   }
@@ -81,8 +84,8 @@ public class PetController {
   public Result<?> addPet(@RequestAttribute("account") String account,
       @RequestBody Pet pet) {
     Long userId = getUserId(account);
-    boolean flag = petQueryService.addMyPet(userId, pet);
-    return flag ? Result.success("添加成功") : Result.fail("添加失败");
+    Pet savedPet = petQueryService.addMyPet(userId, pet);
+    return Result.success(savedPet);
   }
 
   /**
@@ -105,6 +108,29 @@ public class PetController {
     Long userId = getUserId(account);
     boolean flag = petQueryService.deleteMyPet(userId, id);
     return flag ? Result.success("删除成功") : Result.fail("删除失败");
+  }
+
+  /**
+   * 提交送养审核（需登录，只能操作自己的宠物）
+   */
+  @PutMapping("/submitAdoption/{id}")
+  public Result<?> submitAdoption(@RequestAttribute("account") String account,
+      @PathVariable Long id,
+      @RequestParam(required = false) BigDecimal adoptionFee) {
+    Long userId = getUserId(account);
+    boolean flag = petQueryService.submitPetForAdoption(userId, id, adoptionFee);
+    return flag ? Result.success("送养申请提交成功，请等待审核") : Result.fail("送养申请提交失败");
+  }
+
+  /**
+   * 取消送养审核（需登录，只能操作自己的宠物）
+   */
+  @PutMapping("/cancelAdoption/{id}")
+  public Result<?> cancelAdoption(@RequestAttribute("account") String account,
+      @PathVariable Long id) {
+    Long userId = getUserId(account);
+    boolean flag = petQueryService.cancelAdoptionSubmission(userId, id);
+    return flag ? Result.success("已取消送养申请") : Result.fail("取消送养申请失败");
   }
 
   /**

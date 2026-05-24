@@ -8,7 +8,8 @@
             <id property="id" column="id" />
             <result property="orderNo" column="order_no" />
             <result property="userId" column="user_id" />
-            <result property="appointmentId" column="appointment_id" />
+            <result property="orderType" column="order_type" />
+            <result property="relatedId" column="related_id" />
             <result property="totalPrice" column="total_price" />
             <result property="payStatus" column="pay_status" />
             <result property="payTime" column="pay_time" />
@@ -19,7 +20,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,order_no,user_id,appointment_id,total_price,pay_status,
+        id,order_no,user_id,order_type,related_id,total_price,pay_status,
         pay_time,pay_method,remark,create_time,update_time
     </sql>
 </mapper>

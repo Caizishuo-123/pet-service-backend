@@ -16,7 +16,7 @@ public interface ServiceAppointmentService extends IService<ServiceAppointment> 
   /**
    * 创建预约
    */
-  boolean createAppointment(Long userId, ServiceAppointment appointment);
+  Map<String, Object> createAppointment(Long userId, ServiceAppointment appointment);
 
   /**
    * 我的预约列表（分页，带关联信息）

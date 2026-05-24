@@ -32,8 +32,8 @@ public class AppointmentController {
   public Result<?> createAppointment(@RequestAttribute("account") String account,
       @RequestBody ServiceAppointment appointment) {
     Long userId = getUserId(account);
-    boolean flag = serviceAppointmentService.createAppointment(userId, appointment);
-    return flag ? Result.success("预约成功") : Result.fail("预约失败");
+    Map<String, Object> result = serviceAppointmentService.createAppointment(userId, appointment);
+    return Result.success(result);
   }
 
   /**

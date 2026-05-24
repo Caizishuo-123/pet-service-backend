@@ -13,16 +13,19 @@ import java.util.Map;
  */
 public interface OrdersService extends IService<Orders> {
 
+  int ORDER_TYPE_APPOINTMENT = 1;
+  int ORDER_TYPE_ADOPTION = 2;
+
   /**
    * 我的订单列表（分页，带关联信息）
    */
-  Page<Map<String, Object>> getMyOrderPage(Long userId, Integer payStatus,
-      Integer page, Integer pageSize);
+  Page<Map<String, Object>> getMyOrderPage(Long userId, Integer payStatus, Integer orderType,
+      String keyword, Integer page, Integer pageSize);
 
   /**
    * 订单详情
    */
-  Map<String, Object> getOrderDetail(Long id);
+  Map<String, Object> getOrderDetail(Long userId, Long id);
 
   /**
    * 模拟支付（更新支付状态）
@@ -33,4 +36,10 @@ public interface OrdersService extends IService<Orders> {
    * 生成订单号
    */
   String generateOrderNo();
+
+  /**
+   * 创建服务预约订单
+   */
+  Orders createAppointmentOrder(Long userId, Long appointmentId, java.math.BigDecimal totalPrice,
+      String remark);
 }

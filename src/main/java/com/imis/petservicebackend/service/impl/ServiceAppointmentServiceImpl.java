@@ -59,7 +59,7 @@ public class ServiceAppointmentServiceImpl extends ServiceImpl<ServiceAppointmen
     private int maxPerHour;
 
     @Override
-    public boolean createAppointment(Long userId, ServiceAppointment appointment) {
+    public Map<String, Object> createAppointment(Long userId, ServiceAppointment appointment) {
         if (appointment == null || appointment.getAppointmentTime() == null) {
             throw new BusinessException("预约时间不能为空");
         }
@@ -74,6 +74,9 @@ public class ServiceAppointmentServiceImpl extends ServiceImpl<ServiceAppointmen
         }
         if (!userId.equals(pet.getOwnerId())) {
             throw new BusinessException("只能为自己的宠物预约服务");
+        }
+        if (pet.getStatus() == null || pet.getStatus() != PetQueryService.STATUS_OWNED) {
+            throw new BusinessException("只能为当前拥有的宠物预约服务");
         }
         // 校验服务是否存在且启用
         PetServiceEntity service = petServiceQueryService.getById(appointment.getServiceId());
@@ -90,17 +93,23 @@ public class ServiceAppointmentServiceImpl extends ServiceImpl<ServiceAppointmen
         appointment.setUserId(userId);
         appointment.setStatus(1); // 已预约
         boolean saved = this.save(appointment);
-        if (saved) {
-            Orders order = new Orders();
-            order.setOrderNo(ordersService.generateOrderNo());
-            order.setUserId(userId);
-            order.setAppointmentId(appointment.getId());
-            order.setTotalPrice(service.getPrice());
-            order.setPayStatus(0); // 待支付
-            order.setCreateTime(new Date());
-            ordersService.save(order);
+        if (!saved) {
+            throw new BusinessException("预约失败");
         }
-        return saved;
+        Orders order = null;
+        if (saved) {
+            order = ordersService.createAppointmentOrder(userId, appointment.getId(), service.getPrice(),
+                    "服务预约订单");
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("appointmentId", appointment.getId());
+        if (order != null) {
+            result.put("orderId", order.getId());
+            result.put("orderNo", order.getOrderNo());
+            result.put("totalPrice", order.getTotalPrice());
+            result.put("payStatus", order.getPayStatus());
+        }
+        return result;
     }
 
     @Override
@@ -139,6 +148,7 @@ public class ServiceAppointmentServiceImpl extends ServiceImpl<ServiceAppointmen
             PetServiceEntity service = petServiceQueryService.getById(appointment.getServiceId());
             map.put("serviceName", service != null ? service.getName() : "未知服务");
             map.put("servicePrice", service != null ? service.getPrice() : null);
+            fillAppointmentOrderInfo(map, appointment.getId(), appointment.getStatus());
 
             return map;
         }).collect(Collectors.toList());
@@ -187,6 +197,7 @@ public class ServiceAppointmentServiceImpl extends ServiceImpl<ServiceAppointmen
             map.put("servicePrice", service.getPrice());
             map.put("serviceDuration", service.getDuration());
         }
+        fillAppointmentOrderInfo(map, appointment.getId(), appointment.getStatus());
 
         return map;
     }
@@ -203,10 +214,37 @@ public class ServiceAppointmentServiceImpl extends ServiceImpl<ServiceAppointmen
         if (appointment.getStatus() != 1) {
             throw new BusinessException("只能取消状态为'已预约'的记录");
         }
+        Orders order = getAppointmentOrder(id);
+        if (order != null && order.getPayStatus() != null && order.getPayStatus() == 1) {
+            throw new BusinessException("已支付预约不能直接取消，请联系平台处理");
+        }
         LambdaUpdateWrapper<ServiceAppointment> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(ServiceAppointment::getId, id)
                 .set(ServiceAppointment::getStatus, 3); // 3-已取消
         return this.update(updateWrapper);
+    }
+
+    private void fillAppointmentOrderInfo(Map<String, Object> map, Long appointmentId, Integer appointmentStatus) {
+        Orders order = getAppointmentOrder(appointmentId);
+        if (order == null) {
+            map.put("canPay", false);
+            return;
+        }
+        map.put("orderId", order.getId());
+        map.put("orderNo", order.getOrderNo());
+        map.put("orderPayStatus", order.getPayStatus());
+        map.put("orderTotalPrice", order.getTotalPrice());
+        map.put("canPay", order.getPayStatus() != null && order.getPayStatus() == 0 && appointmentStatus != null && appointmentStatus != 3);
+    }
+
+    private Orders getAppointmentOrder(Long appointmentId) {
+        if (appointmentId == null) {
+            return null;
+        }
+        return ordersService.getOne(new LambdaQueryWrapper<Orders>()
+                .eq(Orders::getOrderType, OrdersService.ORDER_TYPE_APPOINTMENT)
+                .eq(Orders::getRelatedId, appointmentId)
+                .last("limit 1"));
     }
 
     private int resolveDurationMinutes(PetServiceEntity service) {

@@ -31,11 +31,13 @@ public class OrdersController {
   public Result<?> getMyOrders(
       @RequestAttribute("account") String account,
       @RequestParam(required = false) Integer payStatus,
+      @RequestParam(required = false) Integer orderType,
+      @RequestParam(required = false) String keyword,
       @RequestParam(defaultValue = "1") Integer page,
       @RequestParam(defaultValue = "10") Integer pageSize) {
     Long userId = getUserId(account);
     Page<Map<String, Object>> pageInfo = ordersService
-        .getMyOrderPage(userId, payStatus, page, pageSize);
+        .getMyOrderPage(userId, payStatus, orderType, keyword, page, pageSize);
     return Result.success(pageInfo);
   }
 
@@ -45,7 +47,8 @@ public class OrdersController {
   @GetMapping("/detail/{id}")
   public Result<?> getOrderDetail(@RequestAttribute("account") String account,
       @PathVariable Long id) {
-    Map<String, Object> detail = ordersService.getOrderDetail(id);
+    Long userId = getUserId(account);
+    Map<String, Object> detail = ordersService.getOrderDetail(userId, id);
     if (detail == null) {
       return Result.fail("订单不存在");
     }
